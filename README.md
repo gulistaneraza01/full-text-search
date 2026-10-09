@@ -1,5 +1,7 @@
 # Full-Text Search: Postgres vs Elasticsearch
 
+![Demo: one query searched in Postgres, Elasticsearch and OpenSearch side by side](media/demo.gif)
+
 A monorepo that searches the same 10,000-product catalogue with **Postgres full-text search** and **Elasticsearch**, side by side. It includes a search API, a product CRUD API that keeps Elasticsearch in sync with Postgres, and a Next.js UI that compares both engines' results and speed.
 
 ```
