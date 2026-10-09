@@ -1,11 +1,11 @@
 # client
 
-Next.js 16 UI that runs one query against both search engines and shows the results side by side.
+Next.js 16 UI that runs one query against Postgres, Elasticsearch and OpenSearch and shows the results side by side, plus a product admin.
 
 - **Search box** with Elasticsearch autocomplete, usable from the keyboard (↑ ↓ Enter Esc)
-- **Engine switch:** Compare, Postgres only, or Elasticsearch only
-- **Per engine:** result count, response time and a "faster" badge
-- **Sidebar facets:** category and price ranges, from Elasticsearch aggregations
+- **Engine switch:** Compare (all three), or Postgres, Elasticsearch or OpenSearch alone
+- **Per engine:** result count, response time and a "fastest" badge
+- **Sidebar facets:** category and price ranges, from Elasticsearch/OpenSearch aggregations
 - **Highlighted matches** and pagination
 - **URL holds all state** (`?q=&engine=&sort=&type=&minPrice=&maxPrice=&page=`), so any search can be bookmarked or shared
 
@@ -24,7 +24,7 @@ bun dev            # http://localhost:3000
 
 ## How it talks to the API
 
-- **Search results:** Server Components fetch them from `API_URL` on the Next.js server. Both engines are queried in parallel, so if one fails the other's results still show.
+- **Search results:** Server Components fetch them from `API_URL` on the Next.js server. All selected engines are queried in parallel, so if one fails the others' results still show.
 - **Autocomplete:** runs in the browser and calls `/api/search/suggest`. `next.config.ts` rewrites `/api/*` to `API_URL`, so no CORS setup is needed.
 
 ## Structure

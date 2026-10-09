@@ -1,10 +1,11 @@
-// Seeds products from seed.csv into Postgres and Elasticsearch (same ids in both).
+// Seeds products from seed.csv into Postgres, Elasticsearch and OpenSearch (same ids everywhere).
 // Resets both stores first, so it's safe to re-run. Usage: bun run seed
 import { prisma } from '../src/config/prisma';
 import {
   bulkIndexProducts,
   recreateProductIndex,
 } from '../src/services/product-index.service';
+import { bulkIndexOsProducts, recreateOsProductIndex } from '../src/services/product-os-index.service';
 
 const BATCH_SIZE = 1000;
 const CSV_PATH = new URL('../seed.csv', import.meta.url);
@@ -52,7 +53,7 @@ async function main() {
   console.log(`Parsed ${products.length} products from seed.csv`);
 
   await prisma.products.deleteMany();
-  await recreateProductIndex();
+  await Promise.all([recreateProductIndex(), recreateOsProductIndex()]);
 
   for (let i = 0; i < products.length; i += BATCH_SIZE) {
     const batch = products.slice(i, i + BATCH_SIZE);
@@ -71,11 +72,11 @@ async function main() {
         modifiedAt: true,
       },
     });
-    await bulkIndexProducts(rows);
+    await Promise.all([bulkIndexProducts(rows), bulkIndexOsProducts(rows)]);
     console.log(`Seeded ${Math.min(i + BATCH_SIZE, products.length)}/${products.length}`);
   }
 
-  // Seed indexed ES directly, so the outbox rows its writes triggered are redundant.
+  // Seed indexed the search engines directly, so the outbox rows its writes triggered are redundant.
   await prisma.productOutbox.deleteMany();
 }
 

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Highlight } from "./highlight";
-import { hrefFor, PAGE_SIZE, searchEngine, type Engine, type Facets, type SearchResult, type SearchState } from "../_lib/search";
+import { ALL_ENGINES, hrefFor, PAGE_SIZE, searchEngine, type Engine, type Facets, type SearchResult, type SearchState } from "../_lib/search";
 
 const ENGINE_META: Record<Engine, { label: string; tagline: string; accent: string }> = {
   postgres: { label: "Postgres", tagline: "tsvector · GIN · ts_rank", accent: "var(--pg)" },
   elasticsearch: { label: "Elasticsearch", tagline: "BM25 · synonyms · fuzzy", accent: "var(--es)" },
+  opensearch: { label: "OpenSearch", tagline: "BM25 · synonyms · fuzzy", accent: "var(--os)" },
 };
 
 const MAX_RESULT_WINDOW = 10_000; // API caps page * pageSize at this
@@ -16,9 +17,9 @@ type Success = { engine: Engine; ok: true; result: SearchResult };
 type Outcome = Success | { engine: Engine; ok: false; error: string };
 
 export async function Results({ state }: { state: SearchState }) {
-  const engines: Engine[] = state.engine === "both" ? ["postgres", "elasticsearch"] : [state.engine];
+  const engines: Engine[] = state.engine === "all" ? ALL_ENGINES : [state.engine];
 
-  // Query engines in parallel; one failing shouldn't hide the other's results.
+  // Query engines in parallel; one failing shouldn't hide the others' results.
   const outcomes: Outcome[] = await Promise.all(
     engines.map(async (engine): Promise<Outcome> => {
       try {
@@ -43,7 +44,7 @@ export async function Results({ state }: { state: SearchState }) {
 
       <div className="order-1 flex min-w-0 flex-col gap-8 lg:order-2">
         <ActiveFilters state={state} />
-        <div className={`grid gap-6 ${outcomes.length > 1 ? "xl:grid-cols-2" : ""}`}>
+        <div className={`grid gap-6 ${engineGridClass(outcomes.length)}`}>
           {outcomes.map((o) => (
             <EngineColumn key={o.engine} outcome={o} isFastest={o.engine === fastest} />
           ))}
@@ -52,6 +53,12 @@ export async function Results({ state }: { state: SearchState }) {
       </div>
     </div>
   );
+}
+
+// Side-by-side columns on wide screens; stacked below that.
+export function engineGridClass(count: number) {
+  if (count >= 3) return "xl:grid-cols-3";
+  return count === 2 ? "xl:grid-cols-2" : "";
 }
 
 function EngineColumn({ outcome, isFastest }: { outcome: Outcome; isFastest: boolean }) {
@@ -63,7 +70,7 @@ function EngineColumn({ outcome, isFastest }: { outcome: Outcome; isFastest: boo
       className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-rule bg-surface"
       style={{ "--accent": meta.accent } as React.CSSProperties}
     >
-      <header className="relative flex flex-wrap items-end justify-between gap-4 border-b border-rule px-5 pt-5 pb-4">
+      <header className="relative flex flex-col gap-3 border-b border-rule px-5 pt-5 pb-4">
         <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />
         <div>
           <h2 id={`${outcome.engine}-heading`} className="text-lg font-semibold tracking-tight text-ink">
@@ -72,21 +79,21 @@ function EngineColumn({ outcome, isFastest }: { outcome: Outcome; isFastest: boo
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted">{meta.tagline}</p>
         </div>
         {outcome.ok && (
-          <dl className="flex items-end gap-5 text-right">
+          <dl className="flex flex-wrap items-end gap-x-6 gap-y-2">
             <div>
               <dt className="font-mono text-[10px] uppercase tracking-widest text-muted">Results</dt>
               <dd className="font-mono text-xl tabular-nums text-ink">{countFmt.format(outcome.result.total)}</dd>
             </div>
             <div>
               <dt className="font-mono text-[10px] uppercase tracking-widest text-muted">Time</dt>
-              <dd className="flex items-baseline justify-end gap-1.5 font-mono text-xl tabular-nums text-ink">
-                {isFastest && (
-                  <span className="rounded-full bg-[var(--accent)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">
-                    faster
-                  </span>
-                )}
+              <dd className="flex items-baseline gap-1.5 font-mono text-xl tabular-nums text-ink">
                 {Math.round(outcome.result.tookMs)}
                 <span className="text-xs text-muted">ms</span>
+                {isFastest && (
+                  <span className="ml-1 self-center rounded-full bg-[var(--accent)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">
+                    fastest
+                  </span>
+                )}
               </dd>
             </div>
           </dl>
@@ -102,7 +109,7 @@ function EngineColumn({ outcome, isFastest }: { outcome: Outcome; isFastest: boo
       ) : (
         <ol className="divide-y divide-rule">
           {outcome.result.hits.map((hit, i) => (
-            <li key={hit.id} className="grid grid-cols-[1.75rem_1fr_auto] gap-x-3 px-5 py-4 transition-colors hover:bg-paper/60">
+            <li key={hit.id} className="grid grid-cols-[1.75rem_1fr] gap-x-2 px-5 py-4 transition-colors hover:bg-paper/60">
               <span className="pt-0.5 font-mono text-xs tabular-nums text-muted">
                 {(outcome.result.page - 1) * outcome.result.pageSize + i + 1}
               </span>
@@ -116,9 +123,9 @@ function EngineColumn({ outcome, isFastest }: { outcome: Outcome; isFastest: boo
                 <p className="mt-2 flex items-center gap-3 font-mono text-[10px] uppercase tracking-wider text-muted">
                   <span className="rounded border border-rule px-1.5 py-0.5">{hit.type}</span>
                   <span title="Relevance score">score {hit.score.toFixed(3)}</span>
+                  <span className="ml-auto text-sm normal-case tracking-normal tabular-nums text-ink">{priceFmt.format(hit.price)}</span>
                 </p>
               </div>
-              <span className="font-mono text-sm tabular-nums text-ink">{priceFmt.format(hit.price)}</span>
             </li>
           ))}
         </ol>
@@ -131,7 +138,7 @@ function FacetPanel({ state, facets }: { state: SearchState; facets?: Facets }) 
   if (!facets) {
     return (
       <p className="text-sm leading-relaxed text-muted">
-        Facets come from Elasticsearch aggregations. Switch to <em>Compare</em> or <em>Elasticsearch</em> to filter by category and price.
+        Facets come from Elasticsearch/OpenSearch aggregations. Switch to <em>Compare</em>, <em>Elasticsearch</em> or <em>OpenSearch</em> to filter by category and price.
       </p>
     );
   }
