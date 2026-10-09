@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
+/* Warm "lab notebook" palette; each engine gets its own accent. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #f4f2ec;
+  --surface: #fbfaf7;
+  --ink: #16150f;
+  --muted: #6b6a63;
+  --rule: #dedbd1;
+  --mark: #ffe27a;
+  --pg: #336791; /* Postgres elephant blue */
+  --es: #00857c; /* Elasticsearch teal */
+  --danger: #b42318;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #121210;
+    --surface: #1b1a17;
+    --ink: #eceae3;
+    --muted: #9b998f;
+    --rule: #2f2e29;
+    --mark: #6b5410; /* dark enough for light text (≈6:1) */
+    --pg: #6c9bd1;
+    --es: #2bb5aa;
+    --danger: #f97066;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-mark: var(--mark);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

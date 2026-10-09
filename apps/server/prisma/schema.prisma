@@ -21,5 +21,9 @@ model Products {
   createdAt   DateTime @default(now())
   modifiedAt  DateTime @updatedAt
 
+  // Generated tsvector for full-text search (expression lives in the migration SQL).
+  searchVector Unsupported("tsvector")? @default(dbgenerated()) @map("search_vector")
+
+  @@index([searchVector], type: Gin)
   @@map("products")
 }

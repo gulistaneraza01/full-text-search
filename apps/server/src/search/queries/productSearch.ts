@@ -1,4 +1,5 @@
 import type { estypes } from '@elastic/elasticsearch';
+import { HL_END, HL_START } from '../../utils/search-params';
 import { PRODUCTS_INDEX } from '../indices/products.mapping';
 import { productAggregations } from './aggregations';
 
@@ -53,13 +54,17 @@ export function buildProductSearch({
               {
                 multi_match: {
                   query: text,
-                  fields: ['name^3', 'description'],
+                  fields: ['name^3', 'description^2', 'type'],
                   operator: 'and',
                 },
               },
               {
                 match: {
-                  'name.plain': { query: text, fuzziness: 'AUTO', operator: 'and' },
+                  'name.plain': {
+                    query: text,
+                    fuzziness: 'AUTO',
+                    operator: 'and',
+                  },
                 },
               },
             ],
@@ -76,6 +81,15 @@ export function buildProductSearch({
     query: { bool: { must, filter } },
     sort: SORTS[sort],
     aggs: productAggregations,
-    highlight: { fields: { name: {}, description: {} } },
+    track_total_hits: true,
+    // number_of_fragments: 0 returns the whole field with matches marked.
+    highlight: {
+      pre_tags: [HL_START],
+      post_tags: [HL_END],
+      fields: {
+        name: { number_of_fragments: 0 },
+        description: { number_of_fragments: 0 },
+      },
+    },
   };
 }
