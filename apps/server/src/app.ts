@@ -18,7 +18,11 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: Error & { status?: number; expose?: boolean }, _req: Request, res: Response, _next: NextFunction) => {
+  // Client errors raised by middleware (e.g. malformed JSON body) keep their 4xx status.
+  if (err.expose && err.status && err.status < 500) {
+    return res.status(err.status).json({ success: false, data: null, error: err.message });
+  }
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
 });
