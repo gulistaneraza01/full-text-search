@@ -8,13 +8,20 @@ export type ProductSyncJob = { id: string };
 
 const queue = createQueue<ProductSyncJob>(PRODUCT_SYNC_QUEUE);
 
-// Queues an Elasticsearch sync for one product. The job reads the row's current
-// state, so it's idempotent and order doesn't matter: upsert if it exists, else delete.
-export async function enqueueProductSync(id: string) {
-  await queue.add('sync', { id }, {
-    attempts: PRODUCT_SYNC_MAX_ATTEMPTS,
-    backoff: { type: 'exponential', delay: BACKOFF_MS },
-    removeOnComplete: true,
-    removeOnFail: 1000,
-  });
+// Queues Elasticsearch syncs for products. Each job reads the row's current state,
+// so jobs are idempotent and order doesn't matter: upsert if it exists, else delete.
+export async function enqueueProductSyncs(ids: string[]) {
+  if (ids.length === 0) return;
+  await queue.addBulk(
+    [...new Set(ids)].map((id) => ({
+      name: 'sync',
+      data: { id },
+      opts: {
+        attempts: PRODUCT_SYNC_MAX_ATTEMPTS,
+        backoff: { type: 'exponential', delay: BACKOFF_MS },
+        removeOnComplete: true,
+        removeOnFail: 1000,
+      },
+    })),
+  );
 }

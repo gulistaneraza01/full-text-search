@@ -27,3 +27,13 @@ model Products {
   @@index([searchVector], type: Gin)
   @@map("products")
 }
+
+// Transactional outbox: a trigger on "products" adds a row for every insert/update/delete,
+// in the same transaction. The relay turns rows into Elasticsearch sync jobs.
+model ProductOutbox {
+  id        BigInt   @id @default(autoincrement())
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("product_outbox")
+}

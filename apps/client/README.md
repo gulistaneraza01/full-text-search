@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# client
 
-## Getting Started
+Next.js 16 UI that runs one query against both search engines and shows the results side by side.
 
-First, run the development server:
+- **Search box** with Elasticsearch autocomplete, usable from the keyboard (↑ ↓ Enter Esc)
+- **Engine switch:** Compare, Postgres only, or Elasticsearch only
+- **Per engine:** result count, response time and a "faster" badge
+- **Sidebar facets:** category and price ranges, from Elasticsearch aggregations
+- **Highlighted matches** and pagination
+- **URL holds all state** (`?q=&engine=&sort=&type=&minPrice=&maxPrice=&page=`), so any search can be bookmarked or shared
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Run
+
+The API ([apps/server](../server)) must be running first.
+
+```sh
+bun install
+bun dev            # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Env var | Default | Used for |
+|---|---|---|
+| `API_URL` | `http://localhost:8000` | Express API base URL |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How it talks to the API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Search results:** Server Components fetch them from `API_URL` on the Next.js server. Both engines are queried in parallel, so if one fails the other's results still show.
+- **Autocomplete:** runs in the browser and calls `/api/search/suggest`. `next.config.ts` rewrites `/api/*` to `API_URL`, so no CORS setup is needed.
 
-## Learn More
+## Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/
+  page.tsx                  page shell; reads searchParams inside <Suspense> (Cache Components)
+  _lib/search.ts            types, URL ↔ state helpers, API fetch
+  _components/
+    search-form.tsx         client: search box, autocomplete, engine switch, sort
+    results.tsx             server: engine columns, facets, active filters, pagination
+    highlight.tsx           renders \u0002…\u0003 markers as <mark> without inserting raw HTML
+  globals.css               color tokens (light + dark), Tailwind v4 theme
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> This Next.js version has breaking changes from older releases. Read `node_modules/next/dist/docs/` before changing framework-level code (see `AGENTS.md`).
