@@ -7,7 +7,8 @@
     "dev": "bun --watch index.ts",
     "start": "bun index.ts",
     "seed": "bun prisma/seed.ts",
-    "studio": "prisma studio --port 5555"
+    "studio": "prisma studio --port 5555",
+    "opensearch:backfill": "bun scripts/backfill-opensearch.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9.5.1",
+    "@opensearch-project/opensearch": "^3.9.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7",
     "bullmq": "^6.3.11",

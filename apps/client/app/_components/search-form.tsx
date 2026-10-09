@@ -7,7 +7,7 @@ import { ENGINES, SORTS, type SearchState, type Suggestion } from "../_lib/searc
 const SUGGEST_DEBOUNCE_MS = 150;
 const MIN_SUGGEST_CHARS = 2;
 
-const ENGINE_LABELS = { both: "Compare", postgres: "Postgres", elasticsearch: "Elasticsearch" } as const;
+const ENGINE_LABELS = { all: "Compare", postgres: "Postgres", elasticsearch: "Elasticsearch", opensearch: "OpenSearch" } as const;
 
 export function SearchForm({ state }: { state: SearchState }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -146,7 +146,7 @@ export function SearchForm({ state }: { state: SearchState }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <fieldset className="flex rounded-full border border-rule bg-surface p-1">
+        <fieldset className="flex flex-wrap rounded-2xl border border-rule bg-surface p-1 sm:rounded-full">
           <legend className="sr-only">Engine</legend>
           {ENGINES.map((engine) => (
             <label key={engine} className="relative cursor-pointer">

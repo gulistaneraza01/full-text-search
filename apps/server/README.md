@@ -3,7 +3,7 @@
 Express API on [Bun](https://bun.com) for product search and product CRUD.
 
 - **Postgres** (via Prisma) is the source of truth, with its own full-text search.
-- **Elasticsearch** is a search index kept in sync with Postgres.
+- **Elasticsearch** and **OpenSearch** are search indexes kept in sync with Postgres (same mappings and queries).
 - **Redis** (via BullMQ) carries the sync jobs.
 
 ## Setup
@@ -13,7 +13,7 @@ bun install
 cp .env.example .env              # fill in the values below
 bunx prisma migrate deploy        # create tables, search column, outbox trigger
 bunx prisma generate              # generate the Prisma client into ./generated
-bun run seed                      # load seed.csv into Postgres + Elasticsearch
+bun run seed                      # load seed.csv into Postgres + Elasticsearch + OpenSearch
 bun run dev                       # http://localhost:8000
 ```
 
@@ -26,8 +26,9 @@ bun run dev                       # http://localhost:8000
 | `REDIS` | `rediss://default:PASSWORD@HOST:6379` | BullMQ queues |
 | `ELASTICSEARCH_URL` | `https://HOST:443` | Elasticsearch cluster |
 | `ELASTICSEARCH_API_KEY` | `base64-api-key` | Elasticsearch auth |
+| `OPENSEARCH_SERVICE_URI` | `https://USER:PASSWORD@HOST:PORT` | OpenSearch cluster, credentials included (e.g. Aiven) |
 
-The server refuses to start if `REDIS`, `ELASTICSEARCH_URL` or `ELASTICSEARCH_API_KEY` is missing. Bun loads `.env` automatically; Prisma's CLI loads it through `prisma7.config.ts`.
+The server refuses to start if `REDIS`, `ELASTICSEARCH_URL`, `ELASTICSEARCH_API_KEY` or `OPENSEARCH_SERVICE_URI` is missing. Bun loads `.env` automatically; Prisma's CLI loads it through `prisma7.config.ts`.
 
 ### Scripts
 
@@ -35,7 +36,8 @@ The server refuses to start if `REDIS`, `ELASTICSEARCH_URL` or `ELASTICSEARCH_AP
 |---|---|
 | `bun run dev` | Start the API with file watching |
 | `bun run start` | Start the API |
-| `bun run seed` | **Reset** products: empties the table and recreates the Elasticsearch index, then loads `seed.csv` (10k rows) |
+| `bun run seed` | **Reset** products: empties the table and recreates the Elasticsearch and OpenSearch indexes, then loads `seed.csv` (10k rows) |
+| `bun run opensearch:backfill` | Rebuild the OpenSearch index from Postgres (doesn't touch Postgres or Elasticsearch) |
 | `bun run studio` | Prisma Studio on http://localhost:5555 |
 
 ## API
@@ -48,6 +50,7 @@ Every JSON response uses the same shape: `{ "success": boolean, "data": ..., "er
 |---|---|---|
 | `GET` | `/api/search/postgres` | Postgres full-text search |
 | `GET` | `/api/search/elasticsearch` | Elasticsearch search, plus `facets` (category counts, price ranges) |
+| `GET` | `/api/search/opensearch` | OpenSearch search: same query, parameters, response and `facets` as Elasticsearch |
 | `GET` | `/api/search/suggest?q=` | Autocomplete on product names (Elasticsearch) |
 
 Search query parameters:
@@ -99,11 +102,12 @@ INSERT / UPDATE / DELETE on products
   └─ trigger products_outbox (same transaction) → row in product_outbox
        └─ outbox relay (polls every 1s) → BullMQ "product-sync" job { id }
             └─ worker reads the product from Postgres
-                 ├─ row exists → index it into Elasticsearch (full overwrite)
-                 └─ row gone   → delete it from Elasticsearch
+                 ├─ row exists → index it into Elasticsearch + OpenSearch (full overwrite)
+                 └─ row gone   → delete it from Elasticsearch + OpenSearch
 
 Every 15 min: the "product-reconcile" job compares Postgres with Elasticsearch
   and queues sync jobs for missing, outdated (modifiedAt differs) or orphaned docs.
+  (Reconcile currently checks Elasticsearch only; repairs it queues also rewrite OpenSearch.)
 ```
 
 - **No lost changes:** the outbox row is committed atomically with the product write. The relay deletes outbox rows only after their jobs are in Redis, so if Redis is down the rows wait and are retried.

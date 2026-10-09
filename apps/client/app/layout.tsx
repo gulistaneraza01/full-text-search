@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Product Search — Postgres vs Elasticsearch",
-  description: "Full-text search over 10,000 products, compared side by side.",
+  title: "Product Search — Postgres vs Elasticsearch vs OpenSearch",
+  description: "Full-text search over 10,000 products, compared across three engines.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

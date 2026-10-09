@@ -1,8 +1,9 @@
 import { API_URL } from "./api";
 
-export const ENGINES = ["both", "postgres", "elasticsearch"] as const;
+export const ENGINES = ["all", "postgres", "elasticsearch", "opensearch"] as const;
 export type EngineChoice = (typeof ENGINES)[number];
-export type Engine = Exclude<EngineChoice, "both">;
+export type Engine = Exclude<EngineChoice, "all">;
+export const ALL_ENGINES: Engine[] = ["postgres", "elasticsearch", "opensearch"];
 
 export const SORTS = [
   { value: "relevance", label: "Relevance" },
@@ -60,7 +61,7 @@ export function parseSearchState(sp: Record<string, string | string[] | undefine
   const page = Number(first(sp.page));
   return {
     q: first(sp.q) ?? "",
-    engine: ENGINES.includes(engine as EngineChoice) ? (engine as EngineChoice) : "both",
+    engine: ENGINES.includes(engine as EngineChoice) ? (engine as EngineChoice) : "all",
     sort: first(sp.sort) ?? "relevance",
     type: first(sp.type),
     minPrice: first(sp.minPrice),
@@ -75,7 +76,7 @@ export function hrefFor(state: SearchState, overrides: Partial<Record<keyof Sear
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(merged)) {
     if (value === undefined || value === "") continue;
-    if (key === "engine" && value === "both") continue;
+    if (key === "engine" && value === "all") continue;
     if (key === "sort" && value === "relevance") continue;
     if (key === "page" && value === 1) continue;
     params.set(key, String(value));

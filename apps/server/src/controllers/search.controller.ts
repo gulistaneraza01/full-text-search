@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { searchProductsEs, suggestProductsEs } from '../services/product-es-search.service';
+import { searchProductsOs } from '../services/product-os-search.service';
 import { searchProductsPg } from '../services/product-pg-search.service';
 import { parseSearchParams, type SearchParams } from '../utils/search-params';
 
@@ -9,7 +10,7 @@ const fail = (res: Response, status: number, error: string) =>
   res.status(status).json({ success: false, data: null, error });
 
 // Validates params, runs the search, and reports round-trip time to the engine.
-function searchHandler<T>(engine: 'postgres' | 'elasticsearch', search: (p: SearchParams) => Promise<T>) {
+function searchHandler<T>(engine: 'postgres' | 'elasticsearch' | 'opensearch', search: (p: SearchParams) => Promise<T>) {
   return async (req: Request, res: Response) => {
     const params = parseSearchParams(req.query);
     if (!params.ok) return fail(res, 400, params.error);
@@ -28,6 +29,7 @@ function searchHandler<T>(engine: 'postgres' | 'elasticsearch', search: (p: Sear
 
 export const searchPostgres = searchHandler('postgres', searchProductsPg);
 export const searchElasticsearch = searchHandler('elasticsearch', searchProductsEs);
+export const searchOpensearch = searchHandler('opensearch', searchProductsOs);
 
 export async function suggest(req: Request, res: Response) {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';

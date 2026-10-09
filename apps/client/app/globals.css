@@ -11,6 +11,7 @@
   --mark: #ffe58a;
   --pg: #2f6497; /* Postgres elephant blue */
   --es: #00857c; /* Elasticsearch teal */
+  --os: #6941c6; /* OpenSearch violet (distinct from the Postgres blue) */
   --danger: #b42318;
   --ok: #157f3b;
 }
