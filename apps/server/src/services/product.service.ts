@@ -1,6 +1,5 @@
 import { prisma } from '../config/prisma';
 import type { ProductInput } from '../utils/product-input';
-import { enqueueProductSync } from '../queue/product-sync.queue';
 
 // Never return the generated search_vector column.
 const productSelect = {
@@ -33,17 +32,14 @@ export function getProduct(id: string) {
 }
 
 export async function createProduct(input: ProductInput) {
-  const product = await prisma.products.create({ data: input, select: productSelect });
-  await enqueueProductSync(product.id);
-  return product;
+  // Elasticsearch sync is triggered by the products outbox trigger (see migration).
+  return prisma.products.create({ data: input, select: productSelect });
 }
 
 // Returns null when the product doesn't exist.
 export async function updateProduct(id: string, input: Partial<ProductInput>) {
   try {
-    const product = await prisma.products.update({ where: { id }, data: input, select: productSelect });
-    await enqueueProductSync(id);
-    return product;
+    return await prisma.products.update({ where: { id }, data: input, select: productSelect });
   } catch (err) {
     if (isNotFound(err)) return null;
     throw err;
@@ -54,7 +50,6 @@ export async function updateProduct(id: string, input: Partial<ProductInput>) {
 export async function deleteProductById(id: string) {
   try {
     await prisma.products.delete({ where: { id } });
-    await enqueueProductSync(id);
     return true;
   } catch (err) {
     if (isNotFound(err)) return false;

@@ -171,7 +171,7 @@ export function SearchForm({ state }: { state: SearchState }) {
             name="sort"
             defaultValue={state.sort}
             onChange={submit}
-            className="rounded-lg border border-rule bg-surface px-2.5 py-1.5 text-ink outline-none focus-visible:border-ink"
+            className="select-menu"
           >
             {SORTS.map((s) => (
               <option key={s.value} value={s.value}>

@@ -5,7 +5,7 @@ import { parseSearchState } from "./_lib/search";
 
 export default function Home({ searchParams }: PageProps<"/">) {
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-4 pt-12 pb-20 sm:px-8 lg:pt-20">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-4 pt-10 pb-20 sm:px-8 lg:pt-16">
       <header className="flex flex-col gap-3">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted">Full-text search · 10,000 products</p>
         <h1 className="max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight text-ink sm:text-6xl">

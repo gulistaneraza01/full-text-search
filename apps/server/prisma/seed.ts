@@ -74,6 +74,9 @@ async function main() {
     await bulkIndexProducts(rows);
     console.log(`Seeded ${Math.min(i + BATCH_SIZE, products.length)}/${products.length}`);
   }
+
+  // Seed indexed ES directly, so the outbox rows its writes triggered are redundant.
+  await prisma.productOutbox.deleteMany();
 }
 
 main()

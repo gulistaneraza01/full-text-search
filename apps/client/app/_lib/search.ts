@@ -1,3 +1,5 @@
+import { API_URL } from "./api";
+
 export const ENGINES = ["both", "postgres", "elasticsearch"] as const;
 export type EngineChoice = (typeof ENGINES)[number];
 export type Engine = Exclude<EngineChoice, "both">;
@@ -48,7 +50,6 @@ export type Suggestion = { id: string; name: string; type: string };
 
 type Envelope<T> = { success: boolean; data: T | null; error: string | null };
 
-const API_URL = process.env.API_URL ?? "http://localhost:8000";
 export const PAGE_SIZE = 10;
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
